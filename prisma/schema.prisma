@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PackageType {
+  BASIC
+  GROWTH
+  PREMIUM
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum LeadSource {
+  WHATSAPP
+  FACEBOOK
+  WEBSITE
+}
+
+enum LeadStatus {
+  NEW
+  FOLLOW_UP
+  CONVERTED
+  LOST
+}
+
+enum MessageType {
+  INCOMING
+  OUTGOING
+  NOTE
+  SYSTEM
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  FAILED
+}
+
+enum BillingCycle {
+  ONE_TIME
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  CLIENT
+}
+
+model Agency {
+  id          String   @id @default(cuid())
+  name        String
+  ownerUserId String
+  createdAt   DateTime @default(now())
+
+  users           User[]
+  clients         Client[]
+  leads           Lead[]
+  conversations   Conversation[]
+  services        Service[]
+  payments        Payment[]
+  automationLogs  AutomationLog[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  role         Role     @default(EDITOR)
+  agencyId     String
+  clientId     String?
+  createdAt    DateTime @default(now())
+
+  agency   Agency   @relation(fields: [agencyId], references: [id])
+  client   Client?  @relation(fields: [clientId], references: [id])
+  leads    Lead[]   @relation("LeadAssignments")
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  agencyId       String
+  clientCode     String       @unique
+  businessName   String
+  contactPerson  String
+  whatsappNumber String
+  email          String
+  packageType    PackageType
+  status         ClientStatus @default(ACTIVE)
+  startDate      DateTime
+  createdAt      DateTime     @default(now())
+
+  agency        Agency     @relation(fields: [agencyId], references: [id])
+  users         User[]
+  leads         Lead[]
+  services      Service[]
+  payments      Payment[]
+  conversations Conversation[]
+}
+
+model Lead {
+  id                  String     @id @default(cuid())
+  agencyId            String
+  clientId            String
+  leadCode            String     @unique
+  customerName        String
+  phoneNumber         String
+  source              LeadSource
+  leadStatus          LeadStatus @default(NEW)
+  assignedAgentUserId String?
+  createdAt           DateTime   @default(now())
+  convertedAt         DateTime?
+
+  agency        Agency       @relation(fields: [agencyId], references: [id])
+  client        Client       @relation(fields: [clientId], references: [id])
+  assignedAgent User?        @relation("LeadAssignments", fields: [assignedAgentUserId], references: [id])
+  conversations Conversation[]
+}
+
+model Conversation {
+  id           String      @id @default(cuid())
+  agencyId     String
+  clientId     String
+  leadId       String
+  lastMessage  String
+  messageType  MessageType
+  timestamp    DateTime
+
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+  lead    Lead    @relation(fields: [leadId], references: [id])
+}
+
+model Service {
+  id            String   @id @default(cuid())
+  agencyId      String
+  clientId      String
+  serviceName   String
+  serviceType   String
+  deliveryStatus String
+  goLiveDate    DateTime?
+  notes         String?
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  agencyId      String
+  clientId      String
+  amount        Float
+  currency      String
+  paymentStatus PaymentStatus
+  billingCycle  BillingCycle
+  dueDate       DateTime
+  paidDate      DateTime?
+  createdAt     DateTime      @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}
+
+model AutomationLog {
+  id              String   @id @default(cuid())
+  agencyId        String
+  clientId        String?
+  eventId         String   @unique
+  eventType       String
+  triggerTable    String
+  triggerRecordId String
+  relatedClientId String?
+  relatedLeadId   String?
+  status          String
+  detailsJson     Json
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+}
