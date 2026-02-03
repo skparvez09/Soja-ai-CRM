@@ -1,0 +1,746 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SojaAI Partner Portal</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: #1e293b; /* Slate 800 */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #06b6d4; /* Cyan 500 */
+            --accent-hover: #0891b2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: rgba(255, 255, 255, 0.1);
+            --radius: 12px;
+            --nav-height: 70px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-bottom: calc(var(--nav-height) + 20px);
+            font-size: 14px;
+        }
+
+        /* Utility */
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: 16px; }
+        .text-center { text-align: center; }
+        .text-accent { color: var(--accent); }
+        .text-sm { font-size: 12px; }
+        .font-bold { font-weight: 700; }
+
+        /* Typography */
+        h1, h2, h3 { margin: 0; }
+        h1 { font-size: 20px; font-weight: 600; }
+        h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 20px; font-weight: 700; color: var(--text-main); display: block; margin-top: 4px; }
+        .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 13px; }
+        input, select, textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+        textarea { resize: vertical; min-height: 80px; }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        .btn-sm { padding: 8px 12px; font-size: 12px; width: auto; display: inline-flex; }
+
+        /* Lists */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .list-item:last-child { border-bottom: none; }
+        
+        /* Badges */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+        .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge-approved { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .badge-rejected { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .badge-hot { background: rgba(239, 68, 68, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item {
+            color: var(--text-muted);
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            flex: 1;
+            padding: 10px 0;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: var(--accent); }
+
+        /* Loading / Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            height: 20px;
+            margin-bottom: 8px;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+
+        /* Admin Tabs */
+        .admin-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .admin-tab { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); font-size: 12px; cursor: pointer; }
+        .admin-tab.active { background: var(--accent); color: white; }
+
+        /* Warning Overlay */
+        #desktop-warning {
+            position: fixed; inset: 0; background: var(--bg-color); z-index: 999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="desktop-warning" class="hidden">
+        <i class="fa-brands fa-telegram fa-3x text-accent" style="margin-bottom: 20px;"></i>
+        <h2>Access Denied</h2>
+        <p class="text-muted">Please open this app inside Telegram.</p>
+    </div>
+
+    <div id="toast" class="toast">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-accent"></i>
+        <span id="toast-message">Action successful</span>
+    </div>
+
+    <div class="container flex justify-between items-center" style="padding-bottom: 10px; padding-top: 15px;">
+        <div class="flex items-center gap-2">
+            <div style="width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">S</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 700;">SojaAI</div>
+                <div class="text-muted text-sm" id="user-display-name">Loading...</div>
+            </div>
+        </div>
+        <div class="badge badge-approved hidden" id="admin-badge">ADMIN</div>
+    </div>
+
+    <div id="main-content" class="container">
+        </div>
+
+    <nav class="bottom-nav" id="bottom-nav">
+        <div class="nav-item active" onclick="router.navigate('home')">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="router.navigate('submit')">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Submit</span>
+        </div>
+        <div class="nav-item" onclick="router.navigate('leads')">
+            <i class="fa-solid fa-list-ul"></i>
+            <span>Leads</span>
+        </div>
+        <div class="nav-item" onclick="router.navigate('earnings')">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Earnings</span>
+        </div>
+        <div class="nav-item hidden" id="nav-admin" onclick="router.navigate('admin')">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Admin</span>
+        </div>
+    </nav>
+
+    <script>
+        /**
+         * CONFIGURATION
+         * Replace BASE_WEBHOOK_URL with your n8n Production URL
+         */
+        const CONFIG = {
+            BASE_WEBHOOK_URL: "PASTE_N8N_BASE_URL_HERE", // e.g. https://n8n.yourdomain.com/webhook
+            USE_MOCK_DATA: true // Set to FALSE when connecting to real n8n
+        };
+
+        // State Management
+        const state = {
+            user: null, // { id, first_name, username }
+            profile: null, // { role, status, balance, stats }
+            currentTab: 'home',
+            leads: [],
+            earnings: []
+        };
+
+        // --- Mock Data Service (For Demonstration) ---
+        const MockService = {
+            getProfile: () => ({
+                role: "agent", // Change to "admin" to test admin view
+                status: "active",
+                stats: { total: 12, pending: 4, approved: 6, closed: 2, earnings: 1250, pending_payout: 250 },
+                balance: 1250
+            }),
+            submitLead: (data) => ({ success: true, lead_id: "LEAD-" + Math.floor(Math.random() * 1000) }),
+            getLeads: () => [
+                { id: 101, business: "Joe's Plumbing", city: "Austin, TX", category: "Plumbing", status: "pending", date: "2023-10-25" },
+                { id: 102, business: "Elite Roofing", city: "Dallas, TX", category: "Roofing", status: "approved", date: "2023-10-24" },
+                { id: 103, business: "Clean Co", city: "Miami, FL", category: "Cleaning", status: "rejected", date: "2023-10-23", note: "Duplicate entry" }
+            ],
+            getEarnings: () => [
+                { id: "D-55", client: "Elite Roofing", plan: "Pro", type: "Setup", amount: 500, status: "Paid", date: "2023-10-26" },
+                { id: "D-56", client: "Elite Roofing", plan: "Pro", type: "Monthly", amount: 100, status: "Pending", date: "2023-11-26" }
+            ],
+            withdraw: () => ({ success: true })
+        };
+
+        // --- API Layer ---
+        const api = {
+            async request(endpoint, method = 'GET', body = null) {
+                const url = `${CONFIG.BASE_WEBHOOK_URL}${endpoint}`;
+                
+                // Mock Mode Interceptor
+                if (CONFIG.USE_MOCK_DATA || url.includes("PASTE_N8N")) {
+                    console.log(`[MOCK API] ${method} ${endpoint}`, body);
+                    await new Promise(r => setTimeout(r, 800)); // Simulate lag
+                    
+                    if(endpoint === '/profile') return MockService.getProfile();
+                    if(endpoint === '/lead/submit') return MockService.submitLead(body);
+                    if(endpoint === '/leads/agent') return MockService.getLeads();
+                    if(endpoint === '/earnings') return MockService.getEarnings();
+                    if(endpoint === '/withdraw/request') return MockService.withdraw();
+                    // Admin mocks
+                    if(endpoint === '/admin/lead/verify') return { success: true };
+                    return {};
+                }
+
+                // Real Fetch
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    const options = { method, headers };
+                    
+                    // Attach User ID to everything
+                    const payload = body ? { ...body, telegram_user_id: state.user.id } : null;
+                    
+                    if (method === 'GET') {
+                        // Append params for GET
+                        const separator = url.includes('?') ? '&' : '?';
+                        const fullUrl = `${url}${separator}telegram_user_id=${state.user.id}`;
+                        const res = await fetch(fullUrl);
+                        return await res.json();
+                    } else {
+                        options.body = JSON.stringify(payload);
+                        const res = await fetch(url, options);
+                        return await res.json();
+                    }
+                } catch (error) {
+                    console.error("API Error", error);
+                    ui.showToast("Network Error. Please retry.", "error");
+                    throw error;
+                }
+            }
+        };
+
+        // --- UI Rendering ---
+        const views = {
+            home: () => {
+                if(!state.profile) return ui.skeleton();
+                const s = state.profile.stats;
+                return `
+                    <div class="card">
+                        <h2 class="text-accent">Overview</h2>
+                        <div class="stat-grid">
+                            <div class="stat-card"><span class="stat-label">Submitted</span><span class="stat-value">${s.total}</span></div>
+                            <div class="stat-card"><span class="stat-label">Pending</span><span class="stat-value" style="color:var(--warning)">${s.pending}</span></div>
+                            <div class="stat-card"><span class="stat-label">Approved</span><span class="stat-value" style="color:var(--success)">${s.approved}</span></div>
+                            <div class="stat-card"><span class="stat-label">Earned</span><span class="stat-value">$${s.earnings}</span></div>
+                        </div>
+                    </div>
+                    
+                    <h3>Quick Actions</h3>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="router.navigate('submit')" class="btn btn-outline" style="flex:1"><i class="fa-solid fa-plus"></i> Submit Lead</button>
+                        <button onclick="router.navigate('earnings')" class="btn btn-outline" style="flex:1"><i class="fa-solid fa-money-bill-transfer"></i> Payouts</button>
+                    </div>
+
+                    ${state.profile.role === 'admin' ? `
+                        <div class="card mt-4" style="border-color: var(--accent);">
+                            <h3>Admin Dashboard</h3>
+                            <p class="text-muted text-sm mb-2">You have admin privileges.</p>
+                            <button onclick="router.navigate('admin')" class="btn">Go to Admin Panel</button>
+                        </div>
+                    ` : ''}
+                `;
+            },
+            
+            submit: () => `
+                <h1>Submit New Lead</h1>
+                <p class="text-muted mb-4">Provide details to earn commission.</p>
+                
+                <form id="leadForm" onsubmit="handlers.submitLead(event)">
+                    <div class="form-group">
+                        <label>Business Name *</label>
+                        <input type="text" name="business_name" required placeholder="e.g. Joe's Plumbing">
+                    </div>
+                    <div class="form-group">
+                        <label>Website / Maps Link *</label>
+                        <input type="text" name="link" required placeholder="https://...">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="form-group" style="flex:1">
+                            <label>City *</label>
+                            <input type="text" name="city" required>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>State *</label>
+                            <input type="text" name="state" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category">
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Clinic">Clinic/Health</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Lead Type</label>
+                        <select name="lead_type">
+                            <option value="Booking">Ready to Book</option>
+                            <option value="Quote">Wants Quote</option>
+                            <option value="Question">General Question</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" placeholder="Any context?"></textarea>
+                    </div>
+                    <div class="form-group flex items-center gap-2">
+                        <input type="checkbox" required style="width: auto;">
+                        <span class="text-sm text-muted">I confirm this is a real lead.</span>
+                    </div>
+                    <button type="submit" class="btn">Submit Lead</button>
+                </form>
+            `,
+
+            leads: () => {
+                if(state.leads.length === 0 && !state.fetchedLeads) {
+                    handlers.fetchLeads(); // Trigger fetch
+                    return ui.skeleton();
+                }
+                
+                let listHtml = state.leads.map(lead => `
+                    <div class="list-item">
+                        <div>
+                            <div class="font-bold">${lead.business}</div>
+                            <div class="text-sm text-muted">${lead.city} • ${lead.category}</div>
+                            ${lead.note ? `<div class="text-sm" style="color:var(--danger)">Note: ${lead.note}</div>` : ''}
+                        </div>
+                        <div class="text-center">
+                            <span class="badge badge-${lead.status}">${lead.status}</span>
+                            <div class="text-sm text-muted mt-2" style="font-size:10px">${lead.date}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                if(state.leads.length === 0) listHtml = `<div class="text-center text-muted mt-4">No leads submitted yet.</div>`;
+
+                return `
+                    <div class="flex justify-between items-center mb-4">
+                        <h1>My Leads</h1>
+                        <button class="btn btn-sm btn-outline" onclick="handlers.fetchLeads()"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="card">
+                        ${listHtml}
+                    </div>
+                `;
+            },
+
+            earnings: () => {
+                // Trigger fetch if not loaded
+                if(!state.fetchedEarnings) handlers.fetchEarnings();
+
+                const historyHtml = state.earnings.map(e => `
+                    <div class="list-item">
+                        <div>
+                            <div class="font-bold">${e.client}</div>
+                            <div class="text-sm text-muted">${e.type} (${e.plan})</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-success">+$${e.amount}</div>
+                            <span class="badge badge-${e.status.toLowerCase() === 'paid' ? 'approved' : 'pending'}">${e.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <h1>Earnings</h1>
+                    <div class="card mt-4">
+                        <div class="text-muted text-sm">Available Balance</div>
+                        <div style="font-size: 32px; font-weight: 700; color: var(--success);">$${state.profile?.balance || 0}</div>
+                        <button class="btn mt-4" onclick="router.navigate('withdraw')">Request Withdrawal</button>
+                    </div>
+
+                    <h3>History</h3>
+                    <div class="card">
+                        ${historyHtml || '<div class="text-center text-muted">No transactions yet.</div>'}
+                    </div>
+                `;
+            },
+
+            withdraw: () => `
+                 <h1>Withdraw</h1>
+                 <p class="text-muted">Minimum withdrawal amount is $50.</p>
+                 <div class="card">
+                    <form onsubmit="handlers.requestWithdraw(event)">
+                        <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" min="50" value="50" name="amount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Method</label>
+                            <select name="method">
+                                <option value="PayPal">PayPal</option>
+                                <option value="Bank">Bank Transfer</option>
+                                <option value="USDT">USDT (TRC20)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Details (Email / Address)</label>
+                            <input type="text" name="details" required placeholder="user@example.com or Wallet Addr">
+                        </div>
+                        <button type="submit" class="btn">Confirm Request</button>
+                        <button type="button" class="btn btn-outline mt-2" onclick="router.navigate('earnings')">Cancel</button>
+                    </form>
+                 </div>
+            `,
+
+            admin: () => `
+                <h1>Admin Panel</h1>
+                <div class="admin-tabs mt-4">
+                    <div class="admin-tab active" onclick="ui.switchAdminTab(this, 'verify')">Verify Leads</div>
+                    <div class="admin-tab" onclick="ui.switchAdminTab(this, 'deals')">Confirm Deals</div>
+                    <div class="admin-tab" onclick="ui.switchAdminTab(this, 'payouts')">Payouts</div>
+                    <div class="admin-tab" onclick="ui.switchAdminTab(this, 'settings')">Settings</div>
+                </div>
+                
+                <div id="admin-content">
+                    ${ui.renderAdminVerify()}
+                </div>
+            `
+        };
+
+        // --- Helper Components for Admin ---
+        ui = {
+            skeleton: () => `
+                <div class="skeleton" style="width: 60%"></div>
+                <div class="skeleton" style="height: 100px"></div>
+                <div class="skeleton" style="width: 80%"></div>
+                <div class="skeleton" style="width: 40%"></div>
+            `,
+            showToast: (msg, type = 'success') => {
+                const t = document.getElementById('toast');
+                const i = document.getElementById('toast-icon');
+                const m = document.getElementById('toast-message');
+                t.className = 'toast show';
+                m.innerText = msg;
+                i.className = type === 'success' ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-circle-exclamation text-danger';
+                setTimeout(() => t.className = 'toast', 3000);
+            },
+            switchAdminTab: (el, tabName) => {
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                const container = document.getElementById('admin-content');
+                if(tabName === 'verify') container.innerHTML = ui.renderAdminVerify();
+                if(tabName === 'deals') container.innerHTML = ui.renderAdminDeals();
+                if(tabName === 'payouts') container.innerHTML = ui.renderAdminPayouts();
+                if(tabName === 'settings') container.innerHTML = ui.renderAdminSettings();
+            },
+            renderAdminVerify: () => `
+                <div class="card">
+                    <div class="flex justify-between mb-2">
+                        <strong>Joe's Plumbing</strong>
+                        <span class="badge badge-pending">Pending</span>
+                    </div>
+                    <p class="text-sm text-muted">Submitted by @john_doe<br>Austin, TX • Plumbing</p>
+                    <textarea placeholder="Admin Note (if rejecting)" class="mt-2" style="font-size:12px;"></textarea>
+                    <div class="flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-success" onclick="handlers.adminAction('approve_lead', 101)">Approve</button>
+                        <button class="btn btn-sm btn-danger" onclick="handlers.adminAction('reject_lead', 101)">Reject</button>
+                    </div>
+                </div>
+                <div class="text-center text-muted text-sm">End of pending leads</div>
+            `,
+            renderAdminDeals: () => `
+                <div class="card">
+                    <h3>Convert Lead to Deal</h3>
+                    <input type="text" placeholder="Lead ID" class="mb-2">
+                    <select class="mb-2"><option>Basic Plan</option><option>Pro Plan</option></select>
+                    <input type="number" placeholder="Setup Fee ($)" class="mb-2">
+                    <button class="btn btn-sm" onclick="ui.showToast('Deal Confirmed')">Create Deal</button>
+                </div>
+            `,
+            renderAdminPayouts: () => `<div class="text-center text-muted">No pending withdrawals</div>`,
+            renderAdminSettings: () => `
+                <div class="card">
+                    <label>Webhook URL</label>
+                    <input type="text" value="${CONFIG.BASE_WEBHOOK_URL}" disabled>
+                    <p class="text-sm text-muted mt-1">Update via source code.</p>
+                </div>
+            `
+        };
+
+        // --- Logic Handlers ---
+        const handlers = {
+            async submitLead(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                
+                // Add Meta
+                data.agent_name = `${state.user.first_name} ${state.user.last_name || ''}`;
+                data.timestamp = new Date().toISOString();
+
+                const btn = e.target.querySelector('button[type="submit"]');
+                const originalText = btn.innerText;
+                btn.innerText = "Sending...";
+                btn.disabled = true;
+
+                try {
+                    const res = await api.request('/lead/submit', 'POST', data);
+                    ui.showToast(`Lead Submitted! ID: ${res.lead_id}`);
+                    e.target.reset();
+                    // Invalidate leads cache
+                    state.fetchedLeads = false;
+                    setTimeout(() => router.navigate('leads'), 1000);
+                } catch(err) {
+                    ui.showToast('Submission Failed', 'error');
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            },
+
+            async fetchLeads() {
+                try {
+                    const data = await api.request('/leads/agent');
+                    state.leads = data;
+                    state.fetchedLeads = true;
+                    router.refresh();
+                } catch(err) {}
+            },
+
+            async fetchEarnings() {
+                try {
+                    state.earnings = await api.request('/earnings');
+                    state.fetchedEarnings = true;
+                    router.refresh();
+                } catch(err) {}
+            },
+
+            async requestWithdraw(e) {
+                e.preventDefault();
+                ui.showToast('Withdrawal Requested');
+                router.navigate('earnings');
+            },
+
+            async adminAction(action, id) {
+                ui.showToast('Processing...');
+                setTimeout(() => ui.showToast('Action Completed'), 1000);
+            }
+        };
+
+        // --- Router ---
+        const router = {
+            navigate: (viewName) => {
+                state.currentTab = viewName;
+                
+                // Update Bottom Nav
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                const activeNav = document.querySelector(`.nav-item[onclick*="'${viewName}'"]`);
+                if(activeNav) activeNav.classList.add('active');
+
+                // Render Content
+                const content = document.getElementById('main-content');
+                if (views[viewName]) {
+                    content.innerHTML = views[viewName]();
+                    window.scrollTo(0,0);
+                }
+            },
+            refresh: () => {
+                router.navigate(state.currentTab);
+            }
+        };
+
+        // --- Initialization ---
+        async function initApp() {
+            const tg = window.Telegram.WebApp;
+            
+            // 1. Check if inside Telegram
+            if (!tg.initDataUnsafe?.user) {
+                // For development testing outside Telegram, create mock user if MOCK enabled
+                if(CONFIG.USE_MOCK_DATA) {
+                    state.user = { id: 999999, first_name: "Demo", last_name: "User", username: "demouser" };
+                    console.warn("Running in Browser Mock Mode");
+                } else {
+                    document.getElementById('desktop-warning').classList.remove('hidden');
+                    return;
+                }
+            } else {
+                tg.expand(); // Full screen
+                state.user = tg.initDataUnsafe.user;
+                
+                // Theme params
+                if(tg.colorScheme === 'dark') {
+                    // Telegram is dark, our theme fits. 
+                }
+            }
+
+            // Update Header
+            document.getElementById('user-display-name').innerText = `@${state.user.username || state.user.first_name}`;
+
+            // 2. Fetch Profile (Auth Check)
+            try {
+                const profile = await api.request('/profile');
+                state.profile = profile;
+
+                if (profile.role === 'admin') {
+                    document.getElementById('nav-admin').classList.remove('hidden');
+                    document.getElementById('admin-badge').classList.remove('hidden');
+                }
+
+                if (profile.agent_status === 'blocked') {
+                    document.body.innerHTML = '<div class="container text-center mt-4"><h1>Access Disabled</h1><p>Contact Admin.</p></div>';
+                    return;
+                }
+
+                // Load Home
+                router.navigate('home');
+
+            } catch (error) {
+                document.getElementById('main-content').innerHTML = '<div class="text-center mt-4">Failed to load profile. Check connection.</div>';
+            }
+        }
+
+        // Start
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
